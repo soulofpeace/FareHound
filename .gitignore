@@ -1,0 +1,14 @@
+logs
+project/project
+project/target
+target
+tmp
+.history
+/.settings/
+/.target/
+/bin/
+/eclipse/
+/.project
+/.classpath
+/.cache
+.DS_Store
