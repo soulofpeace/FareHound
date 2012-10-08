@@ -12,3 +12,4 @@ tmp
 /.classpath
 /.cache
 .DS_Store
+/*.env

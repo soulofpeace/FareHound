@@ -13,8 +13,8 @@ object Sms extends Controller {
   val smsPhoneNumber = "+6585372489"	// Singtel Dongle
     
   // Hoiio credentials
-  val appId = "Q8EdHclHLbzqhB3I"
-  val accessToken = "wejoJ4gRcWYxO3oR"
+  val appId = System.getenv("HOIIO_APP_ID")
+  val accessToken = System.getenv("HOIIO_ACCESS_TOKEN")
 
   
   /**
@@ -42,7 +42,7 @@ object Sms extends Controller {
 	
 	    // Send an SMS to confirm
 	    // Uncomment to send out a real SMS
-	    // send(from, text)
+	    send(from, text)
 	    
 	    Ok(text)
     } catch {
@@ -166,7 +166,12 @@ object Sms extends Controller {
    * Hoiio SMS API to send a message to a phone number
    * phoneNumber in full international format eg. "+6590000000"
    */
-  def send(phoneNumber: String, msg: String, senderName: String = smsPhoneNumber) {  
+  def send(phoneNumber: String, msg: String, senderName: String = smsPhoneNumber) {
+      if (appId == null || accessToken == null) {
+        Logger.error("No Hoiio credentials")
+        throw new Exception("Hoiio app_id and access_token missing. Enter them in .env as environment variables.")
+      }
+      Logger.info("Sending SMS to " + phoneNumber + " (" + msg + ")")
 	  val hoiio = new Hoiio(appId, accessToken)
 	  hoiio.getSmsService().send(phoneNumber, msg, senderName, null, null);
   }
