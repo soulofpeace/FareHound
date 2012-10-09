@@ -26,9 +26,9 @@ object SearchActor{
     system.actorOf(Props[SearchActor], name = "searchActor")
   }
 }
-class SearchActor extends FSM[SearchActorState, Data]{
 
-  private val log = Logging(context.system, this)
+class SearchActor extends Actor with FSM[State, Data]{
+
   private lazy val http = new Http
 
   startWith(Idle, Uninitialized)
@@ -79,20 +79,28 @@ class SearchActor extends FSM[SearchActorState, Data]{
       "cabinClass"    -> searchRequest.cabinClass,
       "numAdults"     -> searchRequest.numAdults.toString,
       "numChildren"   -> searchRequest.numChildren.toString,
-      "departureDate" -> format.format(searchRequest.departureDate),
-      "returnDate"    -> format.format(searchRequest.returnDate),
+      "outboundDate"  -> format.format(searchRequest.departureDate),
+      "inboundDate"   -> format.format(searchRequest.returnDate),
       "apiKey"        -> "testAcc"
       )
 
 
-    val startSearchResponse = Http(startSearchRequest OK as.String)
-    val str  = for(response <- startSearchResponse) yield response
     val instanceIdRegex = """.*?"instanceId".*?:.*?"(.*?)".*?""".r
-    val instanceIdMatch = instanceIdRegex.findFirstMatchIn(str.get)
-    val instanceId = instanceIdMatch.map( _.group(1))
-
-    PullData(searchRequest, instanceId)
+    val startSearchResponse = Http(startSearchRequest OK as.String).option
+    //println(for(response <- startSearchResponse) yield response)
+    val instanceId  = for{
+      response <- startSearchResponse
+    } yield {
+      for{
+          json <- response
+          instanceIdMatch <- instanceIdRegex.findFirstMatchIn(json)
+      }yield instanceIdMatch.group(1)
+    }
+ 
+    PullData(searchRequest, None)
 
   }
+
+  initialize
 }
 

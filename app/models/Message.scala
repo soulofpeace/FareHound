@@ -2,6 +2,7 @@ package models
 
 import java.util.Date
 
-sealed trait State
+sealed trait Message
 
-case class StartSearch(searchRequest:SearchRequest) extends State
+case class StartSearch(searchRequest:SearchRequest) extends Message
+case object Pull extends Message

@@ -1,6 +1,6 @@
 package models
 
-sealed trait SearchActorState
+sealed trait State
 
-case object Idle extends SearchActorState
-case object Active extends SearchActorState
+case object Idle extends State
+case object Active extends State
