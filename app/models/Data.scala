@@ -19,8 +19,10 @@ case class SearchRequest(
 case class PullData(
   searchRequest:SearchRequest,
   instanceId:Option[String],
+  random:String=System.currentTimeMillis.toString,
   numPulls:Int = 0,
-  minPrice:Float = Float.MaxValue
+  minPrice:Option[Float]=None,
+  deeplinkUrl:Option[String]=None
 ) extends Data
 
 

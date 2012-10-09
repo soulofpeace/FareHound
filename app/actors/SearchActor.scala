@@ -28,8 +28,9 @@ object SearchActor{
 }
 
 class SearchActor extends Actor with FSM[State, Data]{
+  private val apiKey = "testAcc"
 
-  private lazy val http = new Http
+  private lazy val http = new Http 
 
   startWith(Idle, Uninitialized)
 
@@ -47,9 +48,9 @@ class SearchActor extends Actor with FSM[State, Data]{
 
   when(Active, stateTimeout = 5 seconds){
     case Event(StateTimeout, pullData:PullData)=>{
-      if(pullData.numPulls < 10){
+      if(pullData.numPulls < 1){
         doPull(pullData)
-        stay using pullData
+        stay using pullData.copy(numPulls=pullData.numPulls +1)
       }
       else{
         goto(Idle) using Uninitialized
@@ -57,16 +58,65 @@ class SearchActor extends Actor with FSM[State, Data]{
     }
   }
 
+  private def constructDeeplinkUrl(instanceId:String, bookingCode:String, origin:String, destination:String, providerId:String)={
+    "http://www.wego.com/api/flights/redirect.html?format=json&apiKey="+
+    apiKey +
+    "&bookingCode="+
+    bookingCode+
+    "&providerId="+
+    providerId+
+    "&dlfrom="+
+    origin+
+    "&dlto="+
+    destination+
+    "instanceId="+
+    instanceId
+  }
+
+  private def getCheapest(response:String, pullData:PullData)={
+    println(response)
+    val responseJson = Json.parse(response)
+    val itinerariesJson = (responseJson \ "response" \ "itineraries").asInstanceOf[JsArray]
+    val cheapestPrice = itinerariesJson.value.foldLeft(None:Option[Float])((cheapestPrice, itineraryJson) => {
+      val result = for{
+        pricePerPax <- (itineraryJson \ "price" \ "totalPricePerPassenger").asOpt[String]
+        currencyCode <- (itineraryJson \ "price" \ "currencyCode").asOpt[String]
+        bookingCode <- (itineraryJson \ "bookingCode").asOpt[String]
+        providerId <- (itineraryJson \ "providerId").asOpt[String]
+
+      }yield{
+        if(cheapestPrice.isDefined && pricePerPax.toFloat > cheapestPrice.get){
+          cheapestPrice.get
+        }
+        else{
+          pricePerPax.toFloat
+        }
+      }
+      if(result.isDefined){
+        result
+      }
+      else{
+        cheapestPrice
+      }
+    })
+    println("Cheapest: "+cheapestPrice)
+    cheapestPrice
+  }
+
   private def doPull(pullData:PullData)={
     val pullUrl = url("http://www.wego.com/api/flights/pull.html")
     val pullRequest = pullUrl <<? Map(
       "instanceId" -> pullData.instanceId.get,
       "format" -> "json",
-      "rand" -> System.currentTimeMillis.toString,
-      "apiKey" -> "testAcc"
+      "rand" -> pullData.random,
+      "apiKey" -> apiKey
     )
-    val pullResponse = Http(pullRequest OK as.String)
-    val json = for(res<-pullResponse) yield Json.parse(res)
+    val pullResponse = http(pullRequest OK as.String).option
+    val cheapestPrice = for{res<-pullResponse}
+                          yield for{
+                            json <- res
+                          }yield getCheapest(json, pullData)
+    cheapestPrice()
   }
 
   private def doStartSearch(searchRequest:SearchRequest)={
@@ -81,12 +131,12 @@ class SearchActor extends Actor with FSM[State, Data]{
       "numChildren"   -> searchRequest.numChildren.toString,
       "outboundDate"  -> format.format(searchRequest.departureDate),
       "inboundDate"   -> format.format(searchRequest.returnDate),
-      "apiKey"        -> "testAcc"
+      "apiKey"        -> apiKey
       )
 
 
     val instanceIdRegex = """.*?"instanceId".*?:.*?"(.*?)".*?""".r
-    val startSearchResponse = Http(startSearchRequest OK as.String).option
+    val startSearchResponse = http(startSearchRequest OK as.String).option
     //println(for(response <- startSearchResponse) yield response)
     val instanceId  = for{
       response <- startSearchResponse
@@ -96,8 +146,7 @@ class SearchActor extends Actor with FSM[State, Data]{
           instanceIdMatch <- instanceIdRegex.findFirstMatchIn(json)
       }yield instanceIdMatch.group(1)
     }
- 
-    PullData(searchRequest, None)
+    PullData(searchRequest, instanceId())
 
   }
 
