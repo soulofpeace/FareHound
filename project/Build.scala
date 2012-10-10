@@ -9,12 +9,13 @@ object ApplicationBuild extends Build {
 
     val appDependencies = Seq(
       // Add your project dependencies here,
-//      "com.typesafe.akka" % "akka-actor" % "2.0.3",
-      "net.databinder.dispatch" %% "dispatch-core" % "0.9.2"
+      "com.typesafe.akka" % "akka-actor" % "2.0.3",
+      "net.databinder.dispatch" %% "dispatch-core" % "0.9.2",
+      "net.debasishg" %% "redisclient" % "2.5",
+      "com.esotericsoftware.kryo" % "kryo" % "2.19"
     )
 
     val main = PlayProject(appName, appVersion, appDependencies, mainLang = SCALA).settings(
-      // Add your own project settings here      
     )
 
 }
