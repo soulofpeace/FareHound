@@ -73,23 +73,26 @@ class SearchActor extends Actor with FSM[State, Data]{
     instanceId
   }
 
-  private def getCheapest(response:String, pullData:PullData)={
+  private def getCheapestPrice(response:String, pullData:PullData)={
     println(response)
     val responseJson = Json.parse(response)
     val itinerariesJson = (responseJson \ "response" \ "itineraries").asInstanceOf[JsArray]
-    val cheapestPrice = itinerariesJson.value.foldLeft(None:Option[Float])((cheapestPrice, itineraryJson) => {
+    val cheapestPrice = itinerariesJson.value.foldLeft(None:Option[CheapestPrice])((cheapestPrice, itineraryJson) => {
       val result = for{
         pricePerPax <- (itineraryJson \ "price" \ "totalPricePerPassenger").asOpt[String]
         currencyCode <- (itineraryJson \ "price" \ "currencyCode").asOpt[String]
         bookingCode <- (itineraryJson \ "bookingCode").asOpt[String]
         providerId <- (itineraryJson \ "providerId").asOpt[String]
-
       }yield{
-        if(cheapestPrice.isDefined && pricePerPax.toFloat > cheapestPrice.get){
-          cheapestPrice.get
+        val deeplinkUrl = constructDeeplinkUrl(pullData.instanceId.get, bookingCode, pullData.searchRequest.origin,
+          pullData.searchRequest.destination, providerId)
+        val currentCheapest = CheapestPrice(pricePerPax.toFloat, deeplinkUrl)
+        val pastCheapest = cheapestPrice.getOrElse(currentCheapest)
+        if (currentCheapest.price  < pastCheapest.price){
+          currentCheapest
         }
         else{
-          pricePerPax.toFloat
+          pastCheapest
         }
       }
       if(result.isDefined){
@@ -103,6 +106,7 @@ class SearchActor extends Actor with FSM[State, Data]{
     cheapestPrice
   }
 
+
   private def doPull(pullData:PullData)={
     val pullUrl = url("http://www.wego.com/api/flights/pull.html")
     val pullRequest = pullUrl <<? Map(
@@ -115,7 +119,7 @@ class SearchActor extends Actor with FSM[State, Data]{
     val cheapestPrice = for{res<-pullResponse}
                           yield for{
                             json <- res
-                          }yield getCheapest(json, pullData)
+                          }yield getCheapestPrice(json, pullData)
     cheapestPrice()
   }
 
@@ -149,6 +153,7 @@ class SearchActor extends Actor with FSM[State, Data]{
     PullData(searchRequest, instanceId())
 
   }
+
 
   initialize
 }

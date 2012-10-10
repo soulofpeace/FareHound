@@ -21,9 +21,10 @@ case class PullData(
   instanceId:Option[String],
   random:String=System.currentTimeMillis.toString,
   numPulls:Int = 0,
-  minPrice:Option[Float]=None,
-  deeplinkUrl:Option[String]=None
+  minPrice:Option[CheapestPrice]=None
 ) extends Data
 
+
+case class CheapestPrice(price:Float, deeplinkUrl:String) extends Data
 
 
