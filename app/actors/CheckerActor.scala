@@ -2,26 +2,28 @@ package actors
 
 import models._
 
-import daos.impl.RedisStore
-import serializers.impl.KryoSerializer
+import daos.Store
+import serializers.SerializerComponent
 
-import akka.actor.Actor
-import akka.actor.Props
-import akka.event.Logging
+import akka.actor._
 
-class CheckerActor extends Actor with RedisStore with KryoSerializer{
-  val store =  new RedisStoreImpl
-  val serializer = new KryoSerializerImpl
+trait CheckerComponent extends Store with SerializerComponent with NotificatorComponent{
+  val checkerActorRef:ActorRef
 
-  def receive={
-    case Check(searchRequest:SearchRequest, cheapestPrice:CheapestPrice)=>{
-      val monitors = store.getMonitorBySearchRequest(searchRequest)
-      monitors.foreach(monitor =>{
-        if(monitor.price > cheapestPrice.price){
-          //code to send alert
-          store.storeMonitor(monitor.copy(price=cheapestPrice.price))
-        }
-      })
+  class CheckerActor extends Actor{
+
+    def receive={
+      case Check(searchRequest:SearchRequest, cheapestPrice:CheapestPrice)=>{
+        val monitors = store.getMonitorBySearchRequest(searchRequest)
+        monitors.foreach(monitor =>{
+          if(monitor.price > cheapestPrice.price){
+            store.storeMonitor(monitor.copy(price=cheapestPrice.price))
+            store.getUser(monitor.userId).map ( user => {
+              notificatorActorRef!Notify(user, cheapestPrice, searchRequest)
+            })
+          }
+        })
+      }
     }
   }
 }

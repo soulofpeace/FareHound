@@ -10,6 +10,6 @@ trait Store extends SerializerComponent{
     def getMonitorBySearchRequest(searchRequest:SearchRequest):List[Monitor]
     def storeMonitor(monitor:Monitor):Unit
     def storeUser(user:User):Unit
-    def getNextUserId:String
+    def getUser(userId:String):Option[User]
   }
 }

@@ -48,13 +48,11 @@ trait RedisStore extends Store{
       })
     }
 
-    def getNextUserId={
+    def getUser(userId:String):Option[User]={
       RedisConnectionFactory.withConnection((client:RedisClient)=>{
-        client.pipeline{ p =>{
-          client.incr("next_user_id")
-          client.get("next_user_id")
-        }}.get(1).asInstanceOf[Option[String]].get
+        client.hget(userId, "phone_number").map( phone => User(userId, phone))
       })
     }
+
   }
 }
