@@ -30,14 +30,14 @@ trait RedisStore extends Store{
       })
     }
 
-    def storeMonitor(user:User, monitor:Monitor){
+    def storeMonitor(monitor:Monitor){
       RedisConnectionFactory.withConnection((client:RedisClient)=>{
         val searchKey = monitor.searchRequest.getKey
         val monitorKey = monitor.getKey
         client.pipeline { p =>{
           p.sadd("searchKeys", searchKey)
           p.sadd(searchKey, monitorKey)
-          p.set(monitorKey.getBytes("UTF-8"), serializer.serialize(monitor))
+          p.set(monitorKey, serializer.serialize(monitor))
         }}
       })
     }
