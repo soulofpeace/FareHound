@@ -12,31 +12,32 @@ trait RedisStore extends Store{
   class RedisStoreImpl extends StoreImpl{
     def getAllSearchKeys={
       RedisConnectionFactory.withConnection((client:RedisClient)=>{
-        client.smembers("searchKeys").toList
-      })
-    }
-    def getMonitorBySearchRequest(searchRequest:SearchRequest)={
-      RedisConnectionFactory.withConnection((client:RedisClient) =>{
-        val searchKey = searchRequest.getKey
-        for{
-          registeredMonitors <- client.smembers(searchKey)
-        }yield registeredMonitors.map
-        val registeredMonitors = client.smembers(searchKey).toList.map(key => key map{
-          k =>{
-            serializer.deserialize[Monitor](client.get(k.getBytes("UTF-8")))
-          }
-        }).toList
+        client.smembers("searchKeys").getOrElse(Set[String]()).toList.map(_.toString)
       })
     }
 
-    def storeMonitor(user:User, monitor:Monitor){
+    def getMonitorBySearchRequest(searchRequest:SearchRequest)={
+      import com.redis.serialization.Parse.Implicits.parseByteArray
+      RedisConnectionFactory.withConnection((client:RedisClient) =>{
+        val searchKey = searchRequest.getKey
+        client.smembers(searchKey).getOrElse(Set[String]()).toList.map(
+          monitorKey =>{
+            client.get[Array[Byte]](monitorKey.toString).map(bytes =>{
+              serializer.deserialize[Monitor](bytes)
+            })
+          }
+        ).flatten
+      })
+    }
+
+    def storeMonitor(monitor:Monitor){
       RedisConnectionFactory.withConnection((client:RedisClient)=>{
         val searchKey = monitor.searchRequest.getKey
         val monitorKey = monitor.getKey
         client.pipeline { p =>{
           p.sadd("searchKeys", searchKey)
           p.sadd(searchKey, monitorKey)
-          p.set(monitorKey.getBytes("UTF-8"), serializer.serialize(monitor))
+          p.set(monitorKey, serializer.serialize(monitor))
         }}
       })
     }
@@ -49,10 +50,10 @@ trait RedisStore extends Store{
 
     def getNextUserId={
       RedisConnectionFactory.withConnection((client:RedisClient)=>{
-        client.pipeline { p =>{
+        client.pipeline{ p =>{
           client.incr("next_user_id")
           client.get("next_user_id")
-        }}.get(1).get
+        }}.get(1).asInstanceOf[Option[String]].get
       })
     }
   }
