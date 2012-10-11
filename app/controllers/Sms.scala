@@ -246,9 +246,12 @@ object Sms extends Controller {
   /**
    * Send an SMS for price alert
    */
-  def sendPriceAlert(phoneNumber: String, bestPrice: Double, currentPrice: Double, link: String) {
-    val text = "Current Price: $" + currencyFormat.format(bestPrice) + /
-        "\n" + "Hey, we will keep a tight watch and SMS you whenever there is a price drop ^^";
+  def sendPriceAlert(phoneNumber: String, currentPrice: Double, bestPrice: Double, link: String) {
+    val text = ( 
+        "Current Price: $" + currencyFormat.format(currentPrice) + 
+        "\nLowest in last 3 mths: $" + currencyFormat.format(bestPrice) +
+        "\nBuy at " + link +
+        "\n\nHey, I'll keep a tight watch and SMS on any price drop ^^" )
         
     send(phoneNumber, text)
   }
