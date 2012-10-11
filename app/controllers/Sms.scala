@@ -6,6 +6,9 @@ import java.util.Date
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import com.hoiio.sdk.Hoiio
+import scala.io.Source
+import scala.collection.mutable.HashMap
+import models.Airport
 
 object Sms extends Controller {
 
@@ -16,6 +19,9 @@ object Sms extends Controller {
   val appId = System.getenv("HOIIO_APP_ID")
   val accessToken = System.getenv("HOIIO_ACCESS_TOKEN")
 
+  val textNoMatch = "Sorry, we could not recognize "
+  val textMultipleMatch = "Sorry, we matched multiple airports for " 
+  val textTryAgain = "Please refine your input."
   
   /**
    * The primary action when SMS is received
@@ -23,30 +29,59 @@ object Sms extends Controller {
   def received(from: String, to: String, msg: String) = Action { implicit request =>
     // Received an SMS
     Logger.info("SMS Received..")
-    Logger.info("From (" + countryForNumber(from) + ") : " + from)
-    Logger.info("To (" + countryForNumber(to) + ") : " + to)
+    Logger.info("From (" + airportFromNumber(from) + ") : " + from)
+    Logger.info("To (" + airportFromNumber(to) + ") : " + to)
     Logger.info("SMS: " + msg)
     
     // Parse the SMS message
-    Logger.info("Interpreting SMS message..")
     try {
+    	Logger.info("Interpreting SMS message..")
     	val search = parseMsg(msg, to)
-    	Logger.info("Flight from: " + search._1)
-	    Logger.info("Flight to: " + search._2)
+    	
+    	// Make sure we have 1 exact match
+    	var airports: List[Airport] = searchAirport(search._1)
+    	if (airports.length == 0) {
+    	   val text = textNoMatch + search._1
+    	   Ok(text)
+    	} else if (airports.length > 1) {
+    	   var airportList = ""
+    	   for (airport <- airports)
+    	     airportList = airportList + airport.name + " (" + airport.code + ")\n"
+    	     if (airportList.length > 80) 
+    	       airportList = airportList.substring(0, 80) + " ..."
+    	   val text = textMultipleMatch + search._1 + ". " + textTryAgain + ".\n\n" + airportList     	  
+    	   Ok(text)
+    	} else {
+    	  
+    	  // Else it's 1 exact match. Good.
+    	
+    	val airportFrom: Airport = airports(0)
+    	val airportTo: Airport = searchAirport(search._2)(0)
+    	
+    	
+    	Logger.info("Flight from: " + airportFrom.name)
+	    Logger.info("Flight to: " + airportTo.name)
 	    Logger.info("When: " + search._3)
 	    Logger.info("Budget: " + search._4)
 	    
 	    // Search confirm
 	    val date = new SimpleDateFormat("d MMM yyyy").format(search._3)
-	    val text = "Your search for flight is confirmed.\n\nfrom " + search._1 + "\nto " + search._2 + "\non " + date + "\nwith budget $" + search._4
+	    val text = "Your search for flight is confirmed.\n\nfrom " + airportFrom.name + "\nto " + airportTo.name + "\non " + date + "\nwith budget $" + search._4
 	
 	    // Send an SMS to confirm
 	    // Uncomment to send out a real SMS
-	    send(from, text)
+//	    send(from, text)
 	    
 	    Ok(text)
+    	  
+    	}
+    	
     } catch {
-      	case e => Ok("Unrecognized SMS. Example: Singapore to Tokyo on Dec 25 with $400")
+      	case e => {
+      	  e.printStackTrace()
+      	  Logger.error(e.toString())
+      	  Ok("Unrecognized format. SMS Example: Singapore to Tokyo on Dec 25 with $400")
+      	}
     }
   }
 
@@ -71,7 +106,8 @@ object Sms extends Controller {
    * As 'from' could be omitted, it is inferred from the country of the phone number that receives the SMS. 
    * 
    * Recommended Format:
-   *	Singapore to Tokyo on Dec 25 with $400
+   * 	SIN to SFO on Dec 25 with $400
+   *	Singapore to San Francisco on Dec 25 with $400
    * 
    * Other Formats:
    *	Tokyo on Dec 25 with $400			// Implicit from (assumed by Hoiio number)
@@ -83,7 +119,7 @@ object Sms extends Controller {
    *	Tokyo on Feb 14						// 14 Feb 2013
    *	tokyo ON feb  14						// Any letter casing, any amount of whitespaces 
    */
-  def parseMsg(msg: String, phoneNumberReceived: String) : (String, String, Date, Double) = {
+  def parseMsg(msg: String, phoneNumberReceived: String=smsPhoneNumber) : (String, String, Date, Double) = {
     // The defaults
 	var from: String = null
 	var to: String = null
@@ -91,18 +127,18 @@ object Sms extends Controller {
 	var budget: Double = -1
 	
 	try {
-		// Convert all to lower case
+		// Convert all to upper case
 		// Prefix m for String
 	    // Prefix a for Array[String]
-		val m = msg toLowerCase
+		val m = msg toUpperCase()
 
 		// Split (from to) and (when budget)
-		var aSplitOn = m split " on "
+		var aSplitOn = m split " ON "
 		var mCountries = aSplitOn(0)
 		var mDateBudget = aSplitOn(1)
 		
 		// Handle (from to) 
-		var aFromTo = mCountries split " to "
+		var aFromTo = mCountries split " TO "
 		if (aFromTo.length > 1) {
 		  from = aFromTo(0)
 		  to = aFromTo(1)
@@ -114,7 +150,7 @@ object Sms extends Controller {
 		// Handle (when)
 		var mDate: String = null
 		var mBudget: String = null
-		var aDateBudget = mDateBudget split " with "
+		var aDateBudget = mDateBudget split " WITH "
 		if (aDateBudget.length > 1) {
 		  mDate = aDateBudget(0)
 		  mBudget = aDateBudget(1)
@@ -130,9 +166,10 @@ object Sms extends Controller {
 		when = whenCal.getTime()
 		
 		// Handle (budget)
-		if (mBudget != null)
+		if (mBudget != null) {
 		  mBudget = mBudget.replace("$", "")
 		  budget = mBudget.toDouble
+		}
 		
 	} catch {
 		case e: Exception => {
@@ -143,7 +180,7 @@ object Sms extends Controller {
 	
 	// If from is not specified in msg, we use the inferred
 	if (from == null)
-		from = countryForNumber(phoneNumberReceived).toLowerCase()
+		from = airportFromNumber(phoneNumberReceived)
 	
 	return (from trim, to trim, when, budget)
   }
@@ -153,10 +190,10 @@ object Sms extends Controller {
   /**
    * Return the country for a phone number
    */
-  def countryForNumber(phoneNumber: String) = phoneNumber match {
-    case p if p.startsWith("+1") => "USA"
-    case p if p.startsWith("+65") => "Singapore"
-    case p if p.startsWith("+") => "Country X"
+  def airportFromNumber(phoneNumber: String) = phoneNumber match {
+    case p if p.startsWith("+1") => "SFO"
+    case p if p.startsWith("+65") => "SIN"
+    case p if p.startsWith("+") => "SIN"
     case _ => "Unknown"
   }
   
@@ -168,14 +205,56 @@ object Sms extends Controller {
    */
   def send(phoneNumber: String, msg: String, senderName: String = smsPhoneNumber) {
       if (appId == null || accessToken == null) {
-        Logger.error("No Hoiio credentials")
-        throw new Exception("Hoiio app_id and access_token missing. Enter them in .env as environment variables.")
+        val error = "Hoiio app_id and access_token missing. Enter them in .env as environment variables."
+        Logger.error(error)
+        throw new Exception(error)
       }
       Logger.info("Sending SMS to " + phoneNumber + " (" + msg + ")")
 	  val hoiio = new Hoiio(appId, accessToken)
 	  hoiio.getSmsService().send(phoneNumber, msg, senderName, null, null);
   }
   
+  
+  /**
+   * Returns list of Airports matched. Great if return 1.
+   * 
+   * Try to match by airport code (0/1)
+   * Else match by airport name (0..n)
+   * Else match by country name (0..n)
+   * Else empty List
+   */
+  def searchAirport(m: String) : List[Airport] = {
+    val M = m toUpperCase
+    val airports = Global.airports
+    
+    // 1. Check if exact match of airport code
+    for ((code, airport) <- airports) {
+      if (code == M) {
+        return List(airport)
+      }
+    }
+    
+    // 2. Match by airport name
+    var matches = List[Airport]()
+    for ((code, airport) <- airports) {
+      if (airport.name.toUpperCase() contains M) {
+        matches = airport :: matches 
+      }
+    }
+    if (matches.length > 0)
+      return matches
+    
+    // 3. Match by country name
+    matches = List[Airport]()
+    for ((code, airport) <- airports) {
+      if (airport.countryName.toUpperCase() contains M) {
+        matches = airport :: matches 
+      }
+    }
+
+    return matches
+  }
+
   
 }
 
