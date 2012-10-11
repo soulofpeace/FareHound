@@ -19,9 +19,16 @@ object Sms extends Controller {
   val appId = System.getenv("HOIIO_APP_ID")
   val accessToken = System.getenv("HOIIO_ACCESS_TOKEN")
 
+  // Reply texts
+  val textOk = "Flight alert is confirmed."
   val textNoMatch = "Sorry, we could not recognize "
   val textMultipleMatch = "Sorry, we matched multiple airports for " 
   val textTryAgain = "Please refine your input."
+  val textErrorFormat = "Unrecognized format. SMS Example: Singapore to Tokyo on Dec 25 with $400"
+
+    // A representation for no budget
+  var nobudget: Double = -99999.99999
+  val currencyFormat = new java.text.DecimalFormat("##,###")
   
   /**
    * The primary action when SMS is received
@@ -29,61 +36,78 @@ object Sms extends Controller {
   def received(from: String, to: String, msg: String) = Action { implicit request =>
     // Received an SMS
     Logger.info("SMS Received..")
-    Logger.info("From (" + airportFromNumber(from) + ") : " + from)
-    Logger.info("To (" + airportFromNumber(to) + ") : " + to)
+    Logger.info("From : " + from)
+    Logger.info("To : " + to)
     Logger.info("SMS: " + msg)
     
     // Parse the SMS message
+    var text:String = null  // SMS reply
     try {
+      // Extract the 4 pieces of information. Possible to throw exception in parseMsg.
     	Logger.info("Interpreting SMS message..")
     	val search = parseMsg(msg, to)
     	
-    	// Make sure we have 1 exact match
-    	var airports: List[Airport] = searchAirport(search._1)
-    	if (airports.length == 0) {
-    	   val text = textNoMatch + search._1
-    	   Ok(text)
-    	} else if (airports.length > 1) {
-    	   var airportList = ""
-    	   for (airport <- airports)
-    	     airportList = airportList + airport.name + " (" + airport.code + ")\n"
-    	     if (airportList.length > 80) 
-    	       airportList = airportList.substring(0, 80) + " ..."
-    	   val text = textMultipleMatch + search._1 + ". " + textTryAgain + ".\n\n" + airportList     	  
-    	   Ok(text)
-    	} else {
-    	  
-    	  // Else it's 1 exact match. Good.
-    	
-    	val airportFrom: Airport = airports(0)
-    	val airportTo: Airport = searchAirport(search._2)(0)
-    	
-    	
-    	Logger.info("Flight from: " + airportFrom.name)
-	    Logger.info("Flight to: " + airportTo.name)
-	    Logger.info("When: " + search._3)
-	    Logger.info("Budget: " + search._4)
-	    
-	    // Search confirm
-	    val date = new SimpleDateFormat("d MMM yyyy").format(search._3)
-	    val text = "Your search for flight is confirmed.\n\nfrom " + airportFrom.name + "\nto " + airportTo.name + "\non " + date + "\nwith budget $" + search._4
-	
-	    // Send an SMS to confirm
-	    // Uncomment to send out a real SMS
-//	    send(from, text)
-	    
-	    Ok(text)
-    	  
+    	// Make sure the airports are exact
+      var airportFrom:Airport = null
+      var airportTo:Airport = null
+    	for (s <- List(search._1, search._2)) {
+    	  // Make sure we have 1 exact match
+        var airports: List[Airport] = searchAirport(s)
+        if (airports.length == 0) {
+           text = textNoMatch + s
+        } else if (airports.length > 1) {
+           var airportList = ""
+           for (airport <- airports)
+             airportList = airportList + airport.name + " (" + airport.code + ")\n"
+           if (airportList.length > 80) 
+             airportList = airportList.substring(0, 80) + " ..."
+           text = textMultipleMatch + s + ". " + textTryAgain + "\n\n" + airportList        
+        } else {
+          // Else it's 1 exact match. Good.
+          if (s == search._1) 
+            airportFrom = airports(0)
+          else 
+            airportTo = airports(0)
+        } 
     	}
     	
+    	if (airportFrom != null && airportTo != null) {
+    	  // Airports are good. Now we deal with date and budget
+    	  val date = new SimpleDateFormat("d MMM yyyy").format(search._3)
+    	  var budget:String = null
+    	  if (search._4 != nobudget) {
+      	  if (search._4 < 0) 
+            throw new Exception("Budget cannot be negative")
+          budget = currencyFormat.format(search._4)  
+    	  }
+        
+        // Search confirmed
+    	  Logger.info("Flight from: " + airportFrom.name)
+        Logger.info("Flight to: " + airportTo.name)
+        Logger.info("When: " + date)
+        text = textOk + "\n\nDepart: " + airportFrom.name + "\nArrive: " + airportTo.name + "\nOn: " + date
+        if (budget != null) {
+          Logger.info("Budget: " + budget)
+          text = text + "\nBudget: $" + budget
+        }
+    	  
+        // TODO: Pass to CK
+    	}
+
     } catch {
       	case e => {
       	  e.printStackTrace()
       	  Logger.error(e.toString())
-      	  Ok("Unrecognized format. SMS Example: Singapore to Tokyo on Dec 25 with $400")
+      	  text = textErrorFormat
       	}
     }
+    
+    // Send an SMS (ok or error text)
+//    send(from, text)
+    Logger("Final text: " + text)
+    Ok(text)
   }
+  
 
   // For Sently
   def receivedSently(from: String, text: String) = Action {
@@ -124,8 +148,8 @@ object Sms extends Controller {
 	var from: String = null
 	var to: String = null
 	var when: Date = null
-	var budget: Double = -1
-	
+	var budget: Double = nobudget
+  
 	try {
 		// Convert all to upper case
 		// Prefix m for String
@@ -204,14 +228,29 @@ object Sms extends Controller {
    * phoneNumber in full international format eg. "+6590000000"
    */
   def send(phoneNumber: String, msg: String, senderName: String = smsPhoneNumber) {
-      if (appId == null || accessToken == null) {
-        val error = "Hoiio app_id and access_token missing. Enter them in .env as environment variables."
-        Logger.error(error)
-        throw new Exception(error)
-      }
-      Logger.info("Sending SMS to " + phoneNumber + " (" + msg + ")")
+    Logger.info("Sending SMS to " + phoneNumber + ": " + msg)
+    // Comment out to send a real SMS
+    return
+    
+    if (appId == null || accessToken == null) {
+      val error = "Hoiio app_id and access_token missing. Enter them in .env as environment variables."
+      Logger.error(error)
+      throw new Exception(error)
+    }
 	  val hoiio = new Hoiio(appId, accessToken)
-	  hoiio.getSmsService().send(phoneNumber, msg, senderName, null, null);
+	  val res = hoiio.getSmsService().send(phoneNumber, msg, senderName, null, null);
+    Logger.info("Hoiio res: " + res.getContent())
+  }
+  
+  
+  /**
+   * Send an SMS for price alert
+   */
+  def sendPriceAlert(phoneNumber: String, bestPrice: Double, currentPrice: Double, link: String) {
+    val text = "Current Price: $" + currencyFormat.format(bestPrice) + /
+        "\n" + "Hey, we will keep a tight watch and SMS you whenever there is a price drop ^^";
+        
+    send(phoneNumber, text)
   }
   
   
