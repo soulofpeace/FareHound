@@ -103,8 +103,8 @@ object Sms extends Controller {
     }
     
     // Send an SMS (ok or error text)
-//    send(from, text)
     Logger("Final text: " + text)
+    send(from, text)
     Ok(text)
   }
   
@@ -230,7 +230,7 @@ object Sms extends Controller {
   def send(phoneNumber: String, msg: String, senderName: String = smsPhoneNumber) {
     Logger.info("Sending SMS to " + phoneNumber + ": " + msg)
     // Comment out to send a real SMS
-    return
+//    return
     
     if (appId == null || accessToken == null) {
       val error = "Hoiio app_id and access_token missing. Enter them in .env as environment variables."
