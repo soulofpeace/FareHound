@@ -14,6 +14,8 @@ GET		/sms/received/sently		controllers.Sms.receivedSently(from ?= null, text ?= 
 # Nexmo
 GET		/sms/received/nexmo			controllers.Sms.receivedNexmo(msisdn ?= null, to ?= null, text ?= null)
 HEAD	/sms/received/nexmo			controllers.Sms.receivedNexmoHead
+# SmsSync
+POST		/sms/received/sync			controllers.Sms.receivedSync
 # Hoiio
 GET		/sms/received				controllers.Sms.received(from ?= null, to ?= null, msg ?= null)
 POST	/sms/received				controllers.Sms.received(from ?= null, to ?= null, msg ?= null)

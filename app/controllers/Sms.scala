@@ -123,7 +123,14 @@ object Sms extends Controller {
   def receivedNexmoHead() = Action {
     Ok("")
   }
-  
+
+  // For SMS Sync
+  def receivedSync = Action { implicit request =>
+    Logger.info("::" + request.body.asFormUrlEncoded)
+    val map = request.body.asFormUrlEncoded.get
+    received(map("from")(0), map("sent_to")(0), map("message")(0))(request)
+  }
+
   
   /**
    * Parse an SMS message and returns the flight search detail (from, to, when, budget). 
@@ -229,16 +236,14 @@ object Sms extends Controller {
    */
   def send(phoneNumber: String, msg: String, senderName: String = smsPhoneNumber) {
     Logger.info("Sending SMS to " + phoneNumber + ": " + msg)
-    // Comment out to send a real SMS
-//    return
     
     if (appId == null || accessToken == null) {
       val error = "Hoiio app_id and access_token missing. Enter them in .env as environment variables."
       Logger.error(error)
       throw new Exception(error)
     }
-	  val hoiio = new Hoiio(appId, accessToken)
-	  val res = hoiio.getSmsService().send(phoneNumber, msg, senderName, null, null);
+    val hoiio = new Hoiio(appId, accessToken)
+  	val res = hoiio.getSmsService().send(phoneNumber, msg, senderName, null, null);
     Logger.info("Hoiio res: " + res.getContent())
   }
   
