@@ -4,24 +4,51 @@ import akka.actor._
 import akka.routing.SmallestMailboxRouter
 
 import daos.impl.RedisStore
-import serializers.impl.KryoSerializer
+import serializers.impl.JavaSerializer
+
+import akka.util.duration._
+
 import actors._
+import models._
+
+import java.util.Date
 
 
 object AlertService 
-extends SearchComponent
-with CheckerComponent
-with NotificatorComponent
+extends ExchangeRateComponent
+with JavaSerializer
 with RedisStore
-with KryoSerializer{
+with NotificatorComponent
+with CheckerComponent
+with SearchComponent
+with SchedulerComponent{
 
   val system = ActorSystem("FareHound")
+  val serializer = new JavaSerializerImpl
   val store = new RedisStoreImpl
-  val serializer = new KryoSerializerImpl
-  val searchActorRef = system.actorOf(Props[SearchActor].withRouter(
+  val exchangeRateComponent = new ExchangeRateComponentImpl 
+  val notificatorActorRef = system.actorOf(Props(new NotificatorActor).withRouter(
       SmallestMailboxRouter(nrOfInstances = 5)))
-  val checkerActorRef = system.actorOf(Props[CheckerActor].withRouter(
+  val checkerActorRef = system.actorOf(Props(new CheckerActor).withRouter(
       SmallestMailboxRouter(nrOfInstances = 5)))
-  val notificatorActorRef = system.actorOf(Props[CheckerActor].withRouter(
+  val searchActorRef = system.actorOf(Props(new SearchActor).withRouter(
       SmallestMailboxRouter(nrOfInstances = 5)))
+  val scheduler = system.actorOf(Props(new SchedulerActor))
+
+  system.scheduler.schedule(0 seconds, 1 hour, scheduler, CheckMonitor)
+
+  def register(
+    phoneNumber:String,
+    origin:String, 
+    destination:String, 
+    departureDate:Date,
+    price:Float){
+
+      val user = User(phoneNumber, phoneNumber)
+      val searchRequest = SearchRequest(origin, destination, departureDate)
+      val monitor = new Monitor(user.id, searchRequest, price)
+      store.storeUser(user)
+      store.storeMonitor(monitor)
+      searchActorRef!StartSearch(searchRequest)
+  }
 }

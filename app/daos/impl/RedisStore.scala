@@ -12,17 +12,20 @@ trait RedisStore extends Store{
   class RedisStoreImpl extends StoreImpl{
     def getAllSearchKeys={
       RedisConnectionFactory.withConnection((client:RedisClient)=>{
-        client.smembers("searchKeys").getOrElse(Set[String]()).toList.map(_.toString)
+        client.smembers("searchKeys").getOrElse(Set[Option[String]]()).toList.map(_.get.toString)
       })
     }
 
     def getMonitorBySearchRequest(searchRequest:SearchRequest)={
-      import com.redis.serialization.Parse.Implicits.parseByteArray
       RedisConnectionFactory.withConnection((client:RedisClient) =>{
         val searchKey = searchRequest.getKey
-        client.smembers(searchKey).getOrElse(Set[String]()).toList.map(
+        client.smembers(searchKey).getOrElse(Set[Option[String]]()).toList.map(
           monitorKey =>{
-            client.get[Array[Byte]](monitorKey.toString).map(bytes =>{
+            //println(monitorKey.getClass)
+            //println("monitorKey: "+monitorKey.toString)
+            import com.redis.serialization.Parse.Implicits.parseByteArray
+            println(client.get(monitorKey.get))
+            client.get[Array[Byte]](monitorKey.get).map(bytes =>{
               serializer.deserialize[Monitor](bytes)
             })
           }
