@@ -126,9 +126,11 @@ object Sms extends Controller {
 
   // For SMS Sync
   def receivedSync = Action { implicit request =>
-    Logger.info("::" + request.body.asFormUrlEncoded)
+    Logger.info("SMSSync: " + request.body.asFormUrlEncoded)
     val map = request.body.asFormUrlEncoded.get
-    received(map("from")(0), map("sent_to")(0), map("message")(0))(request)
+    received(map("from")(0), 
+        smsPhoneNumber /** map("sent_to")(0) they didn't pass */, 
+        map("message")(0)) (request)
   }
 
   
