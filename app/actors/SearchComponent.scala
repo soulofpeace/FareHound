@@ -69,6 +69,7 @@ trait SearchComponent{
         }
         else{
           if(pullData.minPrice.isDefined)
+            log.info("Sending to Checker : "+pullData.searchRequest + " with :"+ pullData.minPrice)
             checkerActorRef!Check(pullData.searchRequest, pullData.minPrice.get)
           val nextPending = getNextPending(pullData.pending)
           if(nextPending.isDefined){
@@ -144,7 +145,7 @@ trait SearchComponent{
           cheapestPrice
         }
       })
-      println("Cheapest: "+cheapestPrice)
+      log.info("Cheapest: "+cheapestPrice)
       cheapestPrice
     }
 

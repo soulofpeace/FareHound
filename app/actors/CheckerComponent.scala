@@ -6,6 +6,7 @@ import daos.Store
 import serializers.SerializerComponent
 
 import akka.actor._
+import akka.event.Logging
 import akka.routing.SmallestMailboxRouter
 
 trait CheckerComponent {
@@ -16,8 +17,10 @@ trait CheckerComponent {
 
   class CheckerActor extends Actor{
 
+    val log = Logging(context.system, this)
     def receive={
       case Check(searchRequest:SearchRequest, cheapestPrice:CheapestPrice)=>{
+        log.info("Receive :"+ searchRequest+ " with: "+cheapestPrice)
         val monitors = store.getMonitorBySearchRequest(searchRequest)
         monitors.foreach(monitor =>{
           if(monitor.price > cheapestPrice.price){
