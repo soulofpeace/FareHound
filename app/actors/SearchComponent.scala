@@ -99,7 +99,7 @@ trait SearchComponent{
     }
 
     private def constructDeeplinkUrl(instanceId:String, bookingCode:String, origin:String, destination:String, providerId:String)={
-      "http://www.wego.com/api/flights/redirect.html?format=json&apiKey="+
+      "http://www.wego.com/api/flights/redirect.html?apiKey="+
       apiKey +
       "&bookingCode="+
       bookingCode+
@@ -109,7 +109,7 @@ trait SearchComponent{
       origin+
       "&dlto="+
       destination+
-      "instanceId="+
+      "&instanceId="+
       instanceId
     }
 
