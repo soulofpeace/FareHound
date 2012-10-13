@@ -3,6 +3,8 @@ package daos.impl
 import daos.Store
 import serializers.SerializerComponent
 
+import play.api._
+
 import com.redis._
 
 
@@ -42,6 +44,7 @@ trait RedisStore extends Store{
       RedisConnectionFactory.withConnection((client:RedisClient)=>{
         val searchKey = monitor.searchRequest.getKey
         val monitorKey = monitor.getKey
+        Logger.info("Adding monitor key "+monitorKey +" to "+searchKey)
         client.pipeline { p =>{
           p.sadd("searchKeys", searchKey)
           p.sadd(searchKey, monitorKey)
@@ -52,6 +55,7 @@ trait RedisStore extends Store{
 
     def storeUser(user:User){
       RedisConnectionFactory.withConnection((client:RedisClient)=>{
+        Logger.info("Storing User: "+user)
         client.hset(user.id, "phone_number", user.phoneNumber)
       })
     }
