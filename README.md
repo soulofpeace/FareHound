@@ -32,7 +32,7 @@ The system will only allow 1 price expectation for the same search query for the
 ## Technology Stack
 ---
 
-All this is make possible by the Typesafe Stack
+All this is made possible by the Typesafe Stack
 
 * Scala 2.9.1 <http://scala-lang.org>
 * Akka 2.0.3 <http://akka.io>
@@ -79,6 +79,8 @@ Update the exchange rate using the Open Exchange rate api <http://openexchangera
 * Asynchonous Polling for Flight Prices
 * Communication between various components are done through Actor message passing
 * Small Memory Footprint. Only User Criteria and the Cheapest Price are stored
+* Horizontally scalable. Just add more actors at each layer
+* Very Extensible. Just add additional layer to do more transformation before sending the SMS notification
 
 
 ## Requirements
