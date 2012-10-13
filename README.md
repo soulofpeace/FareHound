@@ -14,40 +14,54 @@ FareHound is an application that uses the Wego Flight Api <http://www.wego.com/a
 
 
 ## Technology Stack
-***
+---
+
 All this is make possible by the Typesafe Stack
 
-* Scala 2.9.1
-* Akka 2.0.3
-* Play! 2.0.4
+* Scala 2.9.1 <http://scala-lang.org>
+* Akka 2.0.3 <http://akka.io>
+* Play! 2.0.4 <http://www.playframework.org/>
+* Scala Redis 2.5 <https://github.com/debasishg/scala-redis/>
+* Dispatch 0.9.2 <http://dispatch.databinder.net/Dispatch.html>
+* Kryo 2.19 <http://code.google.com/p/kryo/>
 
 with data persisted on Redis <http://redis.io>, a key value store
 
 
 ## Overview of the solution
-***
-These are the component that made up the solution
+---
+These are the component that made up the solution. AlertService is using Cake pattern for dependency injection
 
-### Sms Controller
-Responsible for parsing the SMS request
-  
-### Scheduler Component
+### Communication Component and Sms Parsing Component
+
+#### Sms Controller
+Responsible for parsing the SMS request and sending the SMS
+ 
+### Alert Service
+#### Scheduler Component
 Responsible for the running hourly update
 
-### Search Component
-Run as a Akka FSM. Conduct the Search and the Pull operation and Finding the minimum price of each search
+#### Search Component
+LoadBalancedActor: Run as a Akka FSM. Conduct the Search and the Pull operation and Finding the minimum price of each search. Queued Pending Search Request. 
 
-### Checker Component
-Receive the minimum price of each search request and check against the user criteria. If it matches the user criteria, send the cheapest price to the user
+#### Checker Component
+LoadBalancedActor: Receive the minimum price of each search request and check against the user criteria. If it matches the user criteria, send the cheapest price to the user
 
-### BestPrice Component
-Call the Wego airfare API to get the cheapest price for the search for the past 3 month
+#### BestPrice Component
+LoadBalancedActor: Call the Wego airfare API to get the cheapest price for the search for the past 3 month
 
-### Notifier Component
-Send out the sms to notify the user
+#### Notifier Component
+LoadBalancedActor: Send out the sms to notify the user
 
-### Exchange Rate Component
+#### Exchange Rate Component
 Update the exchange rate using the Open Exchange rate api <http://openexchangerates.org>
+
+## Benefits
+---
+* Asynchonous Polling for Flight Prices
+* Communication between various components are done through Actor message passing
+* Small Memory Footprint. Only User Criteria and the Cheapest Price are stored
+
 
 ## Requirements
 ---
