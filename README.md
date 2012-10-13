@@ -35,9 +35,11 @@ These are the component that made up the solution. AlertService is using Cake pa
 ### Communication Component and Sms Parsing Component
 
 #### Sms Controller
-Responsible for parsing the SMS request and sending the SMS
+---
+Responsible for parsing the SMS request and sending the SMS. Created using Play Framework Controller
  
 ### Alert Service
+---
 #### Scheduler Component
 Responsible for the running hourly update
 
