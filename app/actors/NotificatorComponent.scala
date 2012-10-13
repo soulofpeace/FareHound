@@ -11,6 +11,7 @@ trait NotificatorComponent {
       case Notify(user:User, cheapestPrice:CheapestPrice, searchRequest:SearchRequest)=>{
         println("sending to phonenumber "+ user.phoneNumber + "for "+searchRequest.origin +" to "+ searchRequest.destination + " with "+
           "price "+cheapestPrice.price + " at "+cheapestPrice.deeplinkUrl)
+        controllers.Sms.sendPriceAlert(user.phoneNumber, cheapestPrice.price, 99, cheapestPrice.deeplinkUrl)
       }
     }
   }

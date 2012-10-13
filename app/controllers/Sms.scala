@@ -9,6 +9,7 @@ import com.hoiio.sdk.Hoiio
 import scala.io.Source
 import scala.collection.mutable.HashMap
 import models.Airport
+import service.AlertService
 
 object Sms extends Controller {
 
@@ -73,7 +74,8 @@ object Sms extends Controller {
     	
     	if (airportFrom != null && airportTo != null) {
     	  // Airports are good. Now we deal with date and budget
-    	  val date = new SimpleDateFormat("d MMM yyyy").format(search._3)
+    	  val departDate = search._3
+    	  val date = new SimpleDateFormat("d MMM yyyy").format(departDate)
     	  var budget:String = null
     	  if (search._4 != nobudget) {
       	  if (search._4 < 0) 
@@ -91,7 +93,8 @@ object Sms extends Controller {
           text = text + "\nBudget: $" + budget
         }
     	  
-        // TODO: Pass to CK
+        // Register with AlertService
+    	  AlertService.register(from, airportFrom.code, airportTo.code, departDate, budget.toFloat)
     	}
 
     } catch {
