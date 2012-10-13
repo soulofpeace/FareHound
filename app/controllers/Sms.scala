@@ -81,8 +81,8 @@ object Sms extends Controller {
       	  if (search._4 < 0) 
             throw new Exception("Budget cannot be negative")
           budget = currencyFormat.format(search._4)  
-    	  }
-        
+    	  }	
+    	  
         // Search confirmed
     	  Logger.info("Flight from: " + airportFrom.name)
         Logger.info("Flight to: " + airportTo.name)
@@ -94,7 +94,7 @@ object Sms extends Controller {
         }
     	  
         // Register with AlertService
-    	  AlertService.register(from, airportFrom.code, airportTo.code, departDate, budget.toFloat)
+    	  AlertService.register(from, airportFrom.code, airportTo.code, departDate, search._4.toFloat)
     	}
 
     } catch {
@@ -106,7 +106,7 @@ object Sms extends Controller {
     }
     
     // Send an SMS (ok or error text)
-    Logger("Final text: " + text)
+    Logger.info("Final text: " + text)
     send(from, text)
     Ok(text)
   }
