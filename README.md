@@ -7,6 +7,22 @@ FareHound is an application that uses the Wego Flight Api <http://www.wego.com/a
 * SIN to SFO on Dec 25 with $600
 * Singapore to Tokyo Narita On Dec 25
 
+## How It works
+---
+Steps
+
+1. User send in an SMS with a query
+	* SFO on Dec 25 with $600
+2. Confirmation SMS will be sent to confirm successful registration of query
+3. An initial search will be started and if the search price is below the user expected price, an SMS is sent to the user with current search price. In addition, the best price for the same search for the past 3 months and a booking url will also be sms back to the user
+4. Every 1 hour, A scheduler run all the registered user queries and fire off the searches.
+
+
+User can at anytime send back the same search with a different price expectation. 
+
+The system will only allow 1 price expectation for the same search query for the same user 
+
+
 ## Developers
 ---
 1. Choon Kee, Developer @ Wego
