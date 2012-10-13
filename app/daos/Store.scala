@@ -3,7 +3,8 @@ package daos
 import models._
 import serializers._
 
-trait Store extends SerializerComponent{
+trait Store {
+  this:SerializerComponent =>
   val store:StoreImpl
   trait StoreImpl {
     def getAllSearchKeys:List[String]

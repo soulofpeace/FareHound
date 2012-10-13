@@ -15,27 +15,30 @@ import java.util.Date
 
 
 object AlertService 
-extends ExchangeRateComponent
+extends ComponentSystem
+with ExchangeRateComponent
 with JavaSerializer
 with RedisStore
 with NotificatorComponent
+with BestPricerComponent
 with CheckerComponent
 with SearchComponent
 with SchedulerComponent{
 
-  val system = ActorSystem("FareHound")
-  val serializer = new JavaSerializerImpl
-  val store = new RedisStoreImpl
-  val exchangeRateComponent = new ExchangeRateComponentImpl 
-  val notificatorActorRef = system.actorOf(Props(new NotificatorActor).withRouter(
-      SmallestMailboxRouter(nrOfInstances = 5)))
-  val checkerActorRef = system.actorOf(Props(new CheckerActor).withRouter(
-      SmallestMailboxRouter(nrOfInstances = 5)))
-  val searchActorRef = system.actorOf(Props(new SearchActor).withRouter(
-      SmallestMailboxRouter(nrOfInstances = 5)))
-  val scheduler = system.actorOf(Props(new SchedulerActor))
+  //val serializer = new JavaSerializerImpl
+  //val store = new RedisStoreImpl
+  //val exchangeRateComponent = new ExchangeRateComponentImpl 
+  //val notificatorActorRef = system.actorOf(Props(new NotificatorActor).withRouter(
+      //SmallestMailboxRouter(nrOfInstances = 5)))
+  //val bestPricerComponent = system.actorOf(Props(new BestPricerActor).withRouter(
+      //SmallestMailboxRouter(nrOfInstances = 5)))
+  //val checkerActorRef = system.actorOf(Props(new CheckerActor).withRouter(
+      //SmallestMailboxRouter(nrOfInstances = 5)))
+  //val searchActorRef = system.actorOf(Props(new SearchActor).withRouter(
+      //SmallestMailboxRouter(nrOfInstances = 5)))
+  //val scheduler = system.actorOf(Props(new SchedulerActor))
 
-  system.scheduler.schedule(0 seconds, 1 hour, scheduler, CheckMonitor)
+  //system.scheduler.schedule(0 seconds, 1 hour, scheduler, CheckMonitor)
 
   def register(
     phoneNumber:String,

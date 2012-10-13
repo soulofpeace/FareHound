@@ -6,9 +6,13 @@ import daos.Store
 import serializers.SerializerComponent
 
 import akka.actor._
+import akka.routing.SmallestMailboxRouter
 
-trait CheckerComponent extends Store with SerializerComponent with NotificatorComponent{
-  val checkerActorRef:ActorRef
+trait CheckerComponent {
+  this:Store with BestPricerComponent with ComponentSystem=> 
+
+  val checkerActorRef = system.actorOf(Props(new CheckerActor).withRouter(
+      SmallestMailboxRouter(nrOfInstances = 5)))
 
   class CheckerActor extends Actor{
 
@@ -19,7 +23,7 @@ trait CheckerComponent extends Store with SerializerComponent with NotificatorCo
           if(monitor.price > cheapestPrice.price){
             store.storeMonitor(monitor.copy(price=cheapestPrice.price))
             store.getUser(monitor.userId).map ( user => {
-              notificatorActorRef!Notify(user, cheapestPrice, searchRequest)
+              bestPricerComponent!CheckBestPrice(Notify(user, cheapestPrice, searchRequest, cheapestPrice.price))
             })
           }
         })

@@ -1,14 +1,19 @@
 package daos.impl
 
 import daos.Store
+import serializers.SerializerComponent
 
 import com.redis._
+
 
 import driver.RedisConnectionFactory
 
 import models._
 
 trait RedisStore extends Store{
+  this:SerializerComponent =>
+  val store = new RedisStoreImpl
+
   class RedisStoreImpl extends StoreImpl{
     def getAllSearchKeys={
       RedisConnectionFactory.withConnection((client:RedisClient)=>{

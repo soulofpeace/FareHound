@@ -6,6 +6,7 @@ import akka.actor._
 import akka.pattern.ask
 import akka.dispatch.Await
 import akka.actor.{Actor, ActorRef, FSM, Props}
+import akka.routing.SmallestMailboxRouter
 
 import akka.util.duration._
 
@@ -21,12 +22,14 @@ import play.api.libs.json._
 import dispatch._
 
 
-trait SearchComponent extends CheckerComponent with ExchangeRateComponent{
+trait SearchComponent{
+  this:CheckerComponent with ExchangeRateComponent with ComponentSystem =>
 
-  val searchActorRef:ActorRef
+  val searchActorRef = system.actorOf(Props(new SearchActor).withRouter(
+      SmallestMailboxRouter(nrOfInstances = 5)))
 
   class SearchActor extends Actor with FSM[State, Data]{
-    private val apiKey = "testAcc"
+    private val apiKey = System.getenv("WEGO_API_KEY")
 
     private lazy val http = new Http 
 

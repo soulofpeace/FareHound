@@ -12,8 +12,9 @@ import play.api.libs.json._
 
 trait ExchangeRateComponent{
 
-  val system:ActorSystem
-  val exchangeRateComponent:ExchangeRateComponentImpl
+  this:ComponentSystem => 
+
+  val exchangeRateComponent:ExchangeRateComponentImpl = new ExchangeRateComponentImpl
 
   class ExchangeRateComponentImpl{
 
@@ -22,7 +23,7 @@ trait ExchangeRateComponent{
         case UpdateExchangeRate=>{
           println("updating currency")
           val http = new Http
-          val updateRequest =  url("http://openexchangerates.org/api/latest.json?app_id=3a855f3af4bb4458a716d7406b7c943")
+          val updateRequest =  url("http://openexchangerates.org/api/latest.json?app_id="+System.getenv("OPEN_EXCHANGE_KEY"))
             val updateResponseJson = Json.parse(http(updateRequest OK as.String)())
             val newExchangeRates = (updateResponseJson \ "rates").as[Map[String, Float]]
             exchangeRateMap = newExchangeRates 

@@ -12,6 +12,7 @@ import com.esotericsoftware.kryo.Serializer
 import com.esotericsoftware.kryo.serializers.DefaultSerializers._
 
 trait KryoSerializer extends SerializerComponent{
+  val serialize = new KryoSerializerImpl
   class KryoSerializerImpl extends SerializerImpl{
     private def with_kryo[T](func:Kryo=>T):T={
       val kryo = new Kryo()
