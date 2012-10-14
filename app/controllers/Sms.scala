@@ -118,10 +118,10 @@ object Sms extends Controller {
 
   // For Nexmo
   def receivedNexmo(msisdn: String, to: String, text: String) = Action { implicit request =>
-    // Pipe to Bhaskar app in Hoiio format
+    // Pipe to app in Hoiio format
     Logger.info("Query: " + request.queryString)
     Logger.info("From Nexmo.. +" + msisdn + " to " +  "+" + to + ": " + text)
-    val h = "from=" + URLEncoder.encode("+" + msisdn) + "&to=" + URLEncoder.encode("+" + to) + "&msg=" + URLEncoder.encode(text)
+    val h = "from=" + URLEncoder.encode("+" + msisdn, "UTF-8") + "&to=" + URLEncoder.encode("+" + to, "UTF-8") + "&msg=" + URLEncoder.encode(text, "UTF-8")
     Logger.info("h: " + h)
     val req = url("http://mytraveltimeline.in:443/post_message").POST
       .setBody(h)
