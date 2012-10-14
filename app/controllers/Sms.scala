@@ -29,7 +29,7 @@ object Sms extends Controller {
   val textNoMatch = "Sorry, we could not recognize "
   val textMultipleMatch = "Sorry, we matched multiple airports for " 
   val textTryAgain = "Please refine your input."
-  val textErrorFormat = "Unrecognized format. SMS Example: Singapore to Tokyo on Dec 25 with $400"
+  val textErrorFormat = "Unrecognized format. SMS Example: Singapore to San Francisco on Dec 25 with $1500"
 
     // A representation for no budget
   var nobudget: Double = -99999.99999
