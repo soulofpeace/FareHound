@@ -98,7 +98,7 @@ object Sms extends Controller {
         }
     	  
         // Register with AlertService
-    	  AlertService.register(from, airportFrom.code, airportTo.code, departDate, budget.toFloat)
+    	  AlertService.register(from, airportFrom.code, airportTo.code, departDate, search._4.toFloat)
     	}
 
     } catch {
