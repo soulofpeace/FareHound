@@ -12,6 +12,7 @@ import models.Airport
 import service.AlertService
 import dispatch._
 import play.api.libs.json._
+import java.net.URLEncoder
 
 
 object Sms extends Controller {
@@ -115,14 +116,19 @@ object Sms extends Controller {
   }
   
 
-  // For Sently
-  def receivedSently(from: String, text: String) = Action {
-    received(from, smsPhoneNumber, text)
-  }
-
   // For Nexmo
-  def receivedNexmo(msisdn: String, to: String, text: String) = Action {
-    received("+" + msisdn, "+" + to, text)
+  def receivedNexmo(msisdn: String, to: String, text: String) = Action { implicit request =>
+    // Pipe to Bhaskar app in Hoiio format
+    Logger.info("Query: " + request.queryString)
+    Logger.info("From Nexmo.. +" + msisdn + " to " +  "+" + to + ": " + text)
+    val h = "from=" + URLEncoder.encode("+" + msisdn) + "&to=" + URLEncoder.encode("+" + to) + "&msg=" + URLEncoder.encode(text)
+    Logger.info("h: " + h)
+    val req = url("http://mytraveltimeline.in:443/post_message").POST
+      .setBody(h)
+    val response = Http(req)()
+    val body = response.getResponseBody
+    Logger.info("res: " + body)
+    Ok("")
   }
   
   // For Nexmo verification of URL
