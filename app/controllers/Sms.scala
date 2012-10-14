@@ -10,6 +10,9 @@ import scala.io.Source
 import scala.collection.mutable.HashMap
 import models.Airport
 import service.AlertService
+import dispatch._
+import play.api.libs.json._
+
 
 object Sms extends Controller {
 
@@ -257,13 +260,23 @@ object Sms extends Controller {
    * Send an SMS for price alert
    */
   def sendPriceAlert(phoneNumber: String, currentPrice: Double, bestPrice: Double, link: String) {
-    val text = ( 
+    // Shorten link with bitly
+    val BITLY_LOGIN = System.getenv("BITLY_LOGIN")
+    val BITLY_API_KEY = System.getenv("BITLY_API_KEY")
+    val svc = url("https://api-ssl.bitly.com/v3/shorten").addQueryParameter("login", BITLY_LOGIN).addQueryParameter("apiKey", BITLY_API_KEY).addQueryParameter("longUrl", link)
+    for (str <- Http(svc OK as.String)) {
+      val json = Json.parse(str)
+      val shortenUrl = (json \ "data" \ "url").asOpt[String]
+      Logger.info("bitly: " + shortenUrl)
+      
+      val text = ( 
         "Current Price: $" + currencyFormat.format(currentPrice) + 
         "\nLowest in last 3 mths: $" + currencyFormat.format(bestPrice) +
-        "\nBuy at " + link +
+        "\nBuy at " + shortenUrl +
         "\n\nHey, I'll keep a tight watch and SMS on any price drop ^^" )
         
-    send(phoneNumber, text)
+      send(phoneNumber, text)
+    }
   }
   
   
