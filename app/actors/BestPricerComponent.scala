@@ -13,7 +13,7 @@ trait BestPricerComponent{
   this:NotificatorComponent with ExchangeRateComponent with ComponentSystem=> 
 
   val bestPricerComponent = system.actorOf(Props(new BestPricerActor).withRouter(
-      SmallestMailboxRouter(nrOfInstances = 5)))
+      SmallestMailboxRouter(nrOfInstances = 2)))
 
   class BestPricerActor extends Actor{
 

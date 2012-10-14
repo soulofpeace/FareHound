@@ -26,7 +26,7 @@ trait SearchComponent{
   this:CheckerComponent with ExchangeRateComponent with ComponentSystem =>
 
   val searchActorRef = system.actorOf(Props(new SearchActor).withRouter(
-      SmallestMailboxRouter(nrOfInstances = 5)))
+      SmallestMailboxRouter(nrOfInstances = 2)))
 
   class SearchActor extends Actor with FSM[State, Data]{
     private val apiKey = System.getenv("WEGO_API_KEY")

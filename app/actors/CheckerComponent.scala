@@ -13,7 +13,7 @@ trait CheckerComponent {
   this:Store with BestPricerComponent with ComponentSystem=> 
 
   val checkerActorRef = system.actorOf(Props(new CheckerActor).withRouter(
-      SmallestMailboxRouter(nrOfInstances = 5)))
+      SmallestMailboxRouter(nrOfInstances = 2)))
 
   class CheckerActor extends Actor{
 
