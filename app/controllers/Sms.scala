@@ -244,6 +244,7 @@ object Sms extends Controller {
    */
   def send(phoneNumber: String, msg: String, senderName: String = smsPhoneNumber) {
     Logger.info("Sending SMS to " + phoneNumber + ": " + msg)
+    // return // Uncomment to not send out SMS
     
     if (appId == null || accessToken == null) {
       val error = "Hoiio app_id and access_token missing. Enter them in .env as environment variables."
@@ -266,14 +267,14 @@ object Sms extends Controller {
     val svc = url("https://api-ssl.bitly.com/v3/shorten").addQueryParameter("login", BITLY_LOGIN).addQueryParameter("apiKey", BITLY_API_KEY).addQueryParameter("longUrl", link)
     for (str <- Http(svc OK as.String)) {
       val json = Json.parse(str)
-      val shortenUrl = (json \ "data" \ "url").asOpt[String]
+      val shortenUrl = (json \ "data" \ "url").asOpt[String].getOrElse("http://wego.com")
       Logger.info("bitly: " + shortenUrl)
       
       val text = ( 
         "Current Price: $" + currencyFormat.format(currentPrice) + 
         "\nLowest in last 3 mths: $" + currencyFormat.format(bestPrice) +
-        "\nBuy at " + shortenUrl +
-        "\n\nHey, I'll keep a tight watch and SMS on any price drop ^^" )
+        "\nBuy now: " + shortenUrl +
+        "\n\nHey, I'll continue to keep a tight watch ^^" )
         
       send(phoneNumber, text)
     }
