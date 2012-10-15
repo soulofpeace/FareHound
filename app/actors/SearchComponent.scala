@@ -53,7 +53,7 @@ trait SearchComponent{
         goto(Active) using pullData.copy(pending=pullData.pending:+searchRequest)
       }
       case Event(StateTimeout, pullData:PullData)=>{
-        if(pullData.numPulls < 10){
+        if(pullData.numPulls < 2){
           val cheapestprice = doPull(pullData)
           if(cheapestprice.isDefined){
             stay using pullData.copy(
