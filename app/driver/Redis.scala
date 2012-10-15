@@ -12,8 +12,29 @@ object RedisConnectionFactory {
 
   def withConnection[A](fn:RedisClient=>A)={
     clients.withClient{client =>{
-      client.auth(secret)
-      fn(client)
-    }}
+      def attempt: A = try {
+          println(client)
+          client.auth(secret)
+          fn(client)
+        }
+        catch {
+          case e:com.redis.RedisConnectionException =>
+            println("redis fail!")
+            e.printStackTrace()
+            println("attempting reconnection")
+            if(client.reconnect) 
+              attempt
+            else {
+              println("could not reconnect")
+              throw e
+            }
+          case e =>
+            println("unexpected fail!")
+            e.printStackTrace()
+            throw
+            e
+        }
+        attempt
+      }}
+    }
   }
-}
