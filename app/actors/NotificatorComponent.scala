@@ -9,7 +9,7 @@ import models._
 trait NotificatorComponent{
   this:ComponentSystem =>
   val notificatorActorRef = system.actorOf(Props(new NotificatorActor).withRouter(
-      SmallestMailboxRouter(nrOfInstances = 5)))
+      SmallestMailboxRouter(nrOfInstances = 2)))
 
   class NotificatorActor extends Actor{
     val log = Logging(context.system, this)

@@ -3,6 +3,7 @@ package controllers
 import play.api._
 import scala.collection.mutable.HashMap
 import scala.io.Source
+import service.AlertService
 import models.Airport
 
 object Global extends GlobalSettings {
@@ -10,6 +11,7 @@ object Global extends GlobalSettings {
   override def onStart(app: Application) {
     Logger.info("Application has started!!!")
     setupAirports()
+    AlertService
   }  
   
   override def onStop(app: Application) {

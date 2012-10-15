@@ -10,6 +10,10 @@ import scala.io.Source
 import scala.collection.mutable.HashMap
 import models.Airport
 import service.AlertService
+import dispatch._
+import play.api.libs.json._
+import java.net.URLEncoder
+
 
 object Sms extends Controller {
 
@@ -25,7 +29,7 @@ object Sms extends Controller {
   val textNoMatch = "Sorry, we could not recognize "
   val textMultipleMatch = "Sorry, we matched multiple airports for " 
   val textTryAgain = "Please refine your input."
-  val textErrorFormat = "Unrecognized format. SMS Example: Singapore to Tokyo on Dec 25 with $400"
+  val textErrorFormat = "Unrecognized format. SMS Example: Singapore to San Francisco on Dec 25 with $1500"
 
     // A representation for no budget
   var nobudget: Double = -99999.99999
@@ -112,14 +116,19 @@ object Sms extends Controller {
   }
   
 
-  // For Sently
-  def receivedSently(from: String, text: String) = Action {
-    received(from, smsPhoneNumber, text)
-  }
-
   // For Nexmo
-  def receivedNexmo(msisdn: String, to: String, text: String) = Action {
-    received("+" + msisdn, "+" + to, text)
+  def receivedNexmo(msisdn: String, to: String, text: String) = Action { implicit request =>
+    // Pipe to app in Hoiio format
+    Logger.info("Query: " + request.queryString)
+    Logger.info("From Nexmo.. +" + msisdn + " to " +  "+" + to + ": " + text)
+    val h = "from=" + URLEncoder.encode("+" + msisdn, "UTF-8") + "&to=" + URLEncoder.encode("+" + to, "UTF-8") + "&msg=" + URLEncoder.encode(text, "UTF-8")
+    Logger.info("h: " + h)
+    val req = url("http://mytraveltimeline.in:443/post_message").POST
+      .setBody(h)
+    val response = Http(req)()
+    val body = response.getResponseBody
+    Logger.info("res: " + body)
+    Ok("")
   }
   
   // For Nexmo verification of URL
@@ -241,6 +250,7 @@ object Sms extends Controller {
    */
   def send(phoneNumber: String, msg: String, senderName: String = smsPhoneNumber) {
     Logger.info("Sending SMS to " + phoneNumber + ": " + msg)
+    // return // Uncomment to not send out SMS
     
     if (appId == null || accessToken == null) {
       val error = "Hoiio app_id and access_token missing. Enter them in .env as environment variables."
@@ -257,13 +267,23 @@ object Sms extends Controller {
    * Send an SMS for price alert
    */
   def sendPriceAlert(phoneNumber: String, currentPrice: Double, bestPrice: Double, link: String) {
-    val text = ( 
+    // Shorten link with bitly
+    val BITLY_LOGIN = System.getenv("BITLY_LOGIN")
+    val BITLY_API_KEY = System.getenv("BITLY_API_KEY")
+    val svc = url("https://api-ssl.bitly.com/v3/shorten").addQueryParameter("login", BITLY_LOGIN).addQueryParameter("apiKey", BITLY_API_KEY).addQueryParameter("longUrl", link)
+    for (str <- Http(svc OK as.String)) {
+      val json = Json.parse(str)
+      val shortenUrl = (json \ "data" \ "url").asOpt[String].getOrElse("http://wego.com")
+      Logger.info("bitly: " + shortenUrl)
+      
+      val text = ( 
         "Current Price: $" + currencyFormat.format(currentPrice) + 
         "\nLowest in last 3 mths: $" + currencyFormat.format(bestPrice) +
-        "\nBuy at " + link +
-        "\n\nHey, I'll keep a tight watch and SMS on any price drop ^^" )
+        "\nBuy now: " + shortenUrl +
+        "\n\nHey, I'll continue to keep a tight watch ^^" )
         
-    send(phoneNumber, text)
+      send(phoneNumber, text)
+    }
   }
   
   

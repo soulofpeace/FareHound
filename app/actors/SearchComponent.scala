@@ -26,7 +26,7 @@ trait SearchComponent{
   this:CheckerComponent with ExchangeRateComponent with ComponentSystem =>
 
   val searchActorRef = system.actorOf(Props(new SearchActor).withRouter(
-      SmallestMailboxRouter(nrOfInstances = 5)))
+      SmallestMailboxRouter(nrOfInstances = 2)))
 
   class SearchActor extends Actor with FSM[State, Data]{
     private val apiKey = System.getenv("WEGO_API_KEY")
@@ -53,7 +53,7 @@ trait SearchComponent{
         goto(Active) using pullData.copy(pending=pullData.pending:+searchRequest)
       }
       case Event(StateTimeout, pullData:PullData)=>{
-        if(pullData.numPulls < 10){
+        if(pullData.numPulls < 2){
           val cheapestprice = doPull(pullData)
           if(cheapestprice.isDefined){
             stay using pullData.copy(

@@ -9,9 +9,7 @@ GET     /                           controllers.Application.index
 GET     /assets/*file               controllers.Assets.at(path="/public", file)
 
 # Notified on SMS received 
-# Sently
-GET		/sms/received/sently		controllers.Sms.receivedSently(from ?= null, text ?= null)
-# Nexmo
+# Pipe Nexmo to Hoiio
 GET		/sms/received/nexmo			controllers.Sms.receivedNexmo(msisdn ?= null, to ?= null, text ?= null)
 HEAD	/sms/received/nexmo			controllers.Sms.receivedNexmoHead
 # SmsSync
