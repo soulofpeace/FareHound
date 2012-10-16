@@ -9,9 +9,6 @@ GET     /                           controllers.Application.index
 GET     /assets/*file               controllers.Assets.at(path="/public", file)
 
 # Notified on SMS received 
-# Pipe Nexmo to Hoiio
-GET		/sms/received/nexmo			controllers.Sms.receivedNexmo(msisdn ?= null, to ?= null, text ?= null)
-HEAD	/sms/received/nexmo			controllers.Sms.receivedNexmoHead
 # SmsSync
 POST		/sms/received/sync			controllers.Sms.receivedSync
 # Hoiio

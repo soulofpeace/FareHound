@@ -114,27 +114,7 @@ object Sms extends Controller {
     send(from, text)
     Ok(text)
   }
-  
 
-  // For Nexmo
-  def receivedNexmo(msisdn: String, to: String, text: String) = Action { implicit request =>
-    // Pipe to app in Hoiio format
-    Logger.info("Query: " + request.queryString)
-    Logger.info("From Nexmo.. +" + msisdn + " to " +  "+" + to + ": " + text)
-    val h = "from=" + URLEncoder.encode("+" + msisdn, "UTF-8") + "&to=" + URLEncoder.encode("+" + to, "UTF-8") + "&msg=" + URLEncoder.encode(text, "UTF-8")
-    Logger.info("h: " + h)
-    val req = url("http://mytraveltimeline.in:443/post_message").POST
-      .setBody(h)
-    val response = Http(req)()
-    val body = response.getResponseBody
-    Logger.info("res: " + body)
-    Ok("")
-  }
-  
-  // For Nexmo verification of URL
-  def receivedNexmoHead() = Action {
-    Ok("")
-  }
 
   // For SMS Sync
   def receivedSync = Action { implicit request =>
@@ -276,11 +256,11 @@ object Sms extends Controller {
       val shortenUrl = (json \ "data" \ "url").asOpt[String].getOrElse("http://wego.com")
       Logger.info("bitly: " + shortenUrl)
       
-      val text = ( 
+      val text =
         "Current Price: $" + currencyFormat.format(currentPrice) + 
         "\nLowest in last 3 mths: $" + currencyFormat.format(bestPrice) +
         "\nBuy now: " + shortenUrl +
-        "\n\nHey, I'll continue to keep a tight watch ^^" )
+        "\n\nHey, I'll continue to keep a tight watch ^^"
         
       send(phoneNumber, text)
     }
