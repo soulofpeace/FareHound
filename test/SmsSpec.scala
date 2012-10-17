@@ -69,6 +69,53 @@ class SmsSpec extends Specification {
     search._4 must be equalTo(400)
   }
   
+  "date: 25 Dec" in {
+    val sms = "SFO on 25 Dec with $400"
+    val search = Sms.parseMsg(sms)
+    
+    search._1 must be equalTo("SIN")
+    search._2 must be equalTo("SFO")
+    var c:Calendar = Calendar.getInstance()
+    c.set(2012, 11, 25, 0, 0, 0)
+    search._3.toString() must be equalTo(c.getTime().toString())
+    search._4 must be equalTo(400)
+  }
+    
+  "date: 25 December" in {
+    val sms = "SFO on 25 DecEmber with $400"
+    val search = Sms.parseMsg(sms)
+    
+    search._1 must be equalTo("SIN")
+    search._2 must be equalTo("SFO")
+    var c:Calendar = Calendar.getInstance()
+    c.set(2012, 11, 25, 0, 0, 0)
+    search._3.toString() must be equalTo(c.getTime().toString())
+    search._4 must be equalTo(400)
+  }
+    
+  "date: December 25" in {
+    val sms = "SFO on december 25 with $400"
+    val search = Sms.parseMsg(sms)
+    
+    search._1 must be equalTo("SIN")
+    search._2 must be equalTo("SFO")
+    var c:Calendar = Calendar.getInstance()
+    c.set(2012, 11, 25, 0, 0, 0)
+    search._3.toString() must be equalTo(c.getTime().toString())
+    search._4 must be equalTo(400)
+  }
+  
+  "date: December 25 with spaces" in {
+    val sms = "SFO on  december 25  with $400"
+    val search = Sms.parseMsg(sms)
+    
+    search._1 must be equalTo("SIN")
+    search._2 must be equalTo("SFO")
+    var c:Calendar = Calendar.getInstance()
+    c.set(2012, 11, 25, 0, 0, 0)
+    search._3.toString() must be equalTo(c.getTime().toString())
+    search._4 must be equalTo(400)
+  }
   
   
   

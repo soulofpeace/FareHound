@@ -13,6 +13,7 @@ import service.AlertService
 import dispatch._
 import play.api.libs.json._
 import java.net.URLEncoder
+import util.DateUtil
 
 
 object Sms extends Controller {
@@ -182,8 +183,10 @@ object Sms extends Controller {
 		} else {
 		  mDate = aDateBudget(0)
 		}
-		when = new SimpleDateFormat("MMM d").parse(mDate)
-		var whenCal = Calendar.getInstance()
+    mDate = mDate.trim()
+	  val dateFormat = DateUtil.determineDateFormat(mDate)
+	  when = new SimpleDateFormat(dateFormat).parse(mDate)
+  	var whenCal = Calendar.getInstance()
 		whenCal.setTime(when)
 		// Make sure the when is in the future
 		while (whenCal before Calendar.getInstance())
@@ -192,7 +195,7 @@ object Sms extends Controller {
 		
 		// Handle (budget)
 		if (mBudget != null) {
-		  mBudget = mBudget.replace("$", "")
+		  mBudget = mBudget.replace("$", "").trim()
 		  budget = mBudget.toDouble
 		}
 		
