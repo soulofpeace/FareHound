@@ -8,7 +8,7 @@ import play.api._
 import com.redis._
 
 
-import driver.RedisConnectionFactory
+import connection.RedisConnectionFactory
 
 import models._
 

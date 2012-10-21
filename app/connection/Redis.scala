@@ -1,4 +1,4 @@
-package driver
+package connection
 
 import com.redis._
 import java.net.URI
