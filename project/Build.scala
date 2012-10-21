@@ -12,6 +12,7 @@ object ApplicationBuild extends Build {
       "com.typesafe.akka" % "akka-actor" % "2.0.3",
       "net.databinder.dispatch" %% "dispatch-core" % "0.9.2",
       "net.debasishg" %% "redisclient" % "2.5",
+      "org.apache.commons" % "commons-email" % "1.2",
       "com.esotericsoftware.kryo" % "kryo" % "2.19"
     )
 
